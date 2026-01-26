@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "94697883492",
-    "firebase_url": "https://aqua-sentinel-c804a-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "project_id": "aqua-sentinel-c804a",
-    "storage_bucket": "aqua-sentinel-c804a.firebasestorage.app"
+    "project_number": "119210705634",
+    "project_id": "aqua-sentinel-90685",
+    "storage_bucket": "aqua-sentinel-90685.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:94697883492:android:f30a8d84a9f9fb7d1b5c71",
+        "mobilesdk_app_id": "1:119210705634:android:cefec518368212320e14bb",
         "android_client_info": {
           "package_name": "com.example.aqua_sentinel"
         }
@@ -16,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCl6rDaQ8y6YM3YNwF3xysoWkAeifZ_SPI"
+          "current_key": "AIzaSyDSUcmogxlXrflw1CjD0vR2IlN-_bPz-Mc"
         }
       ],
       "services": {
