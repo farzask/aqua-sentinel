@@ -9,7 +9,9 @@ class BaseTheme extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xfff5f7f9),
       appBar: AppBar(
+        backgroundColor: Color(0xfff5f7f9),
         title: Text(
           title,
           style: TextStyle(

@@ -1,21 +1,55 @@
-import 'package:aqua_sentinel/utils/theme.dart';
+import 'package:aqua_sentinel/utils/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:aqua_sentinel/pages/admin_dashboard.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_dashboard.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_Billing.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_Alerts.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_Profile.dart';
+
+bool isAdmin = false;
 
 class Homepage extends StatefulWidget {
-  const Homepage({super.key});
-
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
 class _HomepageState extends State<Homepage> {
-  bool isAdmin = false;
+  int selectedIndex = 0;
+  List<Widget> userScreens = [
+    UserDashboard(),
+    UserBilling(),
+    UserAlerts(),
+    UserProfile(),
+  ];
+
+  Widget renderUI() {
+    if (isAdmin) {
+      return AdminDashboard();
+    } else {
+      return userScreens[selectedIndex];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BaseTheme(
-      column: Column(
+    return Scaffold(
+      backgroundColor: Color(0xfff5f7f9),
+      appBar: AppBar(
+        backgroundColor: Color(0xfff5f7f9),
+        title: Text(
+          isAdmin ? 'Admin Dashboard' : 'User Dashboard',
+          style: TextStyle(
+            fontFamily: 'SFProDisplay',
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: const Color(0xFF06245E),
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Column(
         children: [
+          //Dashboard Slider
           Center(
             child: Container(
               width: 300,
@@ -49,12 +83,16 @@ class _HomepageState extends State<Homepage> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () => setState(() => isAdmin = false),
-                          child: Center(
-                            child: Text(
-                              "User",
-                              style: TextStyle(
-                                color: isAdmin ? Colors.grey : Colors.white,
-                                fontWeight: FontWeight.w600,
+                          child: Container(
+                            height: double.infinity,
+                            color: Colors.transparent,
+                            child: Center(
+                              child: Text(
+                                "User",
+                                style: TextStyle(
+                                  color: isAdmin ? Colors.grey : Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -63,12 +101,16 @@ class _HomepageState extends State<Homepage> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () => setState(() => isAdmin = true),
-                          child: Center(
-                            child: Text(
-                              "Admin",
-                              style: TextStyle(
-                                color: isAdmin ? Colors.white : Colors.grey,
-                                fontWeight: FontWeight.w600,
+                          child: Container(
+                            height: double.infinity,
+                            color: Colors.transparent,
+                            child: Center(
+                              child: Text(
+                                "Admin",
+                                style: TextStyle(
+                                  color: isAdmin ? Colors.white : Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -80,9 +122,20 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
           ),
+          //Screen Rendering Function
+          renderUI(),
         ],
       ),
-      title: 'Admin Dashboard',
+      bottomNavigationBar: !isAdmin
+          ? BottomNavBar(
+              selectedIndex: selectedIndex,
+              selectButton: (selectedButtonIndex) {
+                setState(() {
+                  selectedIndex = selectedButtonIndex;
+                });
+              },
+            )
+          : null,
     );
   }
 }

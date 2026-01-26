@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/pages/homepage.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(),
-      home: Homepage(),
+      home: SafeArea(child: Homepage()),
     );
   }
 }
