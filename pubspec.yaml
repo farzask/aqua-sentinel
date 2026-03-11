@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   fl_chart: ^1.1.0
   firebase_core: ^4.4.0
+  google_generative_ai: ^0.4.6
 
 dev_dependencies:
   flutter_test:
@@ -92,3 +93,6 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  vector_math: ^2.1.0

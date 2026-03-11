@@ -4,7 +4,7 @@ import 'package:aqua_sentinel/constants/constants.dart';
 class BillingHistoryItem extends StatelessWidget {
   final String bill;
   final String date;
-  BillingHistoryItem({required this.bill, required this.date});
+  const BillingHistoryItem({super.key, required this.bill, required this.date});
   @override
   Widget build(BuildContext context) {
     return Expanded(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/constants/constants.dart';
 
 class ReusableLeakDetectedCard extends StatelessWidget {
+  const ReusableLeakDetectedCard({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Row(

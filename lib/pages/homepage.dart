@@ -9,6 +9,8 @@ import 'package:aqua_sentinel/pages/userScreens/user_Profile.dart';
 bool isAdmin = false;
 
 class Homepage extends StatefulWidget {
+  const Homepage({super.key});
+
   @override
   State<Homepage> createState() => _HomepageState();
 }

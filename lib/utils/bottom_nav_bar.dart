@@ -4,7 +4,11 @@ import 'package:aqua_sentinel/widgets/navBar_items.dart';
 class BottomNavBar extends StatelessWidget {
   final selectedIndex;
   final void Function(int) selectButton;
-  BottomNavBar({required this.selectedIndex, required this.selectButton});
+  const BottomNavBar({
+    super.key,
+    required this.selectedIndex,
+    required this.selectButton,
+  });
   @override
   Widget build(BuildContext context) {
     return Container(

@@ -5,7 +5,8 @@ class PastAlertContainer extends StatelessWidget {
   final String cardStatus;
   final IconData iconName;
   final String time;
-  PastAlertContainer({
+  const PastAlertContainer({
+    super.key,
     required this.cardStatus,
     required this.iconName,
     required this.time,
@@ -14,12 +15,8 @@ class PastAlertContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsetsGeometry.only(
-        left: 15,
-        top: 18,
-        bottom: 18,
-        right: 18,
-      ),
+      padding: EdgeInsetsGeometry.symmetric(vertical: 18, horizontal: 15),
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -40,7 +37,7 @@ class PastAlertContainer extends StatelessWidget {
             radius: 25,
             child: Icon(iconName, size: 24, color: Colors.green),
           ),
-          SizedBox(width: 15),
+          SizedBox(width: 12),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

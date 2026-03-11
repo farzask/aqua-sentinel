@@ -8,7 +8,8 @@ class NavBarItem extends StatelessWidget {
   final int itemNumber;
   final void Function(int) selectButton;
 
-  NavBarItem({
+  const NavBarItem({
+    super.key,
     required this.label,
     required this.iconName,
     required this.isActive,

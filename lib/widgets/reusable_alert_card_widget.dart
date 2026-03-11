@@ -7,7 +7,8 @@ class ReusableAlertCard extends StatelessWidget {
   final String unit;
   final IconData cardIcon;
 
-  ReusableAlertCard({
+  const ReusableAlertCard({
+    super.key,
     required this.cardTitle,
     required this.primaryText,
     required this.unit,

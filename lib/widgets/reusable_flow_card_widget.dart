@@ -7,7 +7,8 @@ class ReusableFlowCard extends StatelessWidget {
   final String unit;
   final IconData cardIcon;
 
-  ReusableFlowCard({
+  const ReusableFlowCard({
+    super.key,
     required this.cardTitle,
     required this.primaryText,
     required this.unit,

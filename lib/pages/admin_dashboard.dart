@@ -5,6 +5,8 @@ import 'package:aqua_sentinel/constants/constants.dart';
 import 'package:aqua_sentinel/widgets/reusable_leak_detected_card.dart';
 
 class AdminDashboard extends StatelessWidget {
+  const AdminDashboard({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Expanded(

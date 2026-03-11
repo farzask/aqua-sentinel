@@ -3,6 +3,8 @@ import 'package:aqua_sentinel/constants/constants.dart';
 import 'package:aqua_sentinel/widgets/billing_history_item_widget.dart';
 
 class UserBilling extends StatelessWidget {
+  const UserBilling({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Expanded(

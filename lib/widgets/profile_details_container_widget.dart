@@ -5,7 +5,8 @@ class ProfileDetailsContainer extends StatelessWidget {
   final IconData icon;
   final String fieldtag;
   final String fieldValue;
-  ProfileDetailsContainer({
+  const ProfileDetailsContainer({
+    super.key,
     required this.icon,
     required this.fieldtag,
     required this.fieldValue,
