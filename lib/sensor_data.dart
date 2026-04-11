@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:aqua_sentinel/notification_service.dart';
 
 class LeakRecord {
   final bool wasLeaking;
@@ -88,7 +89,7 @@ class SensorData {
         final newLeakStatus = data['leak_status'] as bool? ?? false;
         leakTimestamp = data['leak_timestamp']?.toString() ?? '';
 
-        // Record leak change in history
+        // Record leak change in history and notify
         if (newLeakStatus != leakStatus || !hasData) {
           leakHistory.insert(
             0,
@@ -98,6 +99,11 @@ class SensorData {
               date: DateTime.now(),
             ),
           );
+
+          // Show push notification when leak is detected
+          if (newLeakStatus && hasData) {
+            notificationService.showLeakNotification();
+          }
         }
         leakStatus = newLeakStatus;
         pump = data['pump'] as bool? ?? false;
