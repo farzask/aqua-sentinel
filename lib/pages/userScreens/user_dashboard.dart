@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:aqua_sentinel/constants/constants.dart';
 import 'package:aqua_sentinel/utils/circular_progress_bar.dart';
 import 'package:aqua_sentinel/utils/line_chart.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../apivariables.dart';
 
-final String _geminiApiKey =
-    YOUR_GEMINI_API_KEY; // Replace with your Gemini API key
+final String _geminiApiKey = YOUR_GEMINI_API_KEY;
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -23,6 +23,7 @@ class _UserDashboardState extends State<UserDashboard> {
   String? generatedMessage;
   String? tip;
   bool _isLoading = true;
+  bool _isLoadingQuality = true;
 
   // Water usage data
   final double currentMonthUsage = 1200;
@@ -33,7 +34,45 @@ class _UserDashboardState extends State<UserDashboard> {
   @override
   void initState() {
     super.initState();
-    _fetchGeminiInsight();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    await _fetchPotabilityData();
+    await _fetchGeminiInsight();
+  }
+
+  Future<void> _fetchPotabilityData() async {
+    try {
+      final response = await http.get(Uri.parse(STREAMLIT_API_URL));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final probabilityPotable = (data['probability_potable'] as num)
+            .toDouble();
+        final probabilityUnsafe = (data['probability_unsafe'] as num)
+            .toDouble();
+        final input = data['input'] as Map<String, dynamic>;
+
+        setState(() {
+          status = probabilityPotable > probabilityUnsafe
+              ? 'Healthy'
+              : 'Unsafe';
+          ph = (input['ph'] as num).toDouble();
+          tds = (input['Solids'] as num).toDouble();
+          turbidity = (input['Turbidity'] as num).toDouble();
+          _isLoadingQuality = false;
+        });
+      } else {
+        throw Exception(
+          'Failed to fetch potability data: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error fetching potability data: $e');
+      setState(() {
+        _isLoadingQuality = false;
+      });
+    }
   }
 
   Future<void> _fetchGeminiInsight() async {
@@ -92,6 +131,10 @@ Respond ONLY in valid JSON format with exactly two fields:
   @override
   Widget build(BuildContext context) {
     var user = 'Nikhil';
+    final isHealthy = status == 'Healthy';
+    final statusColor = isHealthy
+        ? const Color.fromARGB(255, 43, 153, 47)
+        : Colors.red;
 
     return Expanded(
       child: ListView(
@@ -111,72 +154,79 @@ Respond ONLY in valid JSON format with exactly two fields:
               ],
               borderRadius: BorderRadius.circular(18),
             ),
-            child:
-                //water quality
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Status: $status",
-                              style: TextStyle(
-                                color: const Color.fromARGB(255, 43, 153, 47),
-                                fontWeight: FontWeight.bold,
+            child: _isLoadingQuality
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: CircularProgressIndicator(color: Colors.blue),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Status: $status",
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Text(
-                              "Excellent!",
-                              style: TextStyle(
-                                fontSize: 25,
-                                fontWeight: FontWeight.bold,
+                              Text(
+                                isHealthy ? "Excellent!" : "Caution!",
+                                style: TextStyle(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      "Your water quality is within the optimal range for consumption and daily use. No contaminants detected.",
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Column(
-                          children: [
-                            Text(
-                              "pH",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text("$ph"),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                              "TDS",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text("$tds ppm"),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                              "Turbidity",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text("$turbidity NTU"),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        isHealthy
+                            ? "Your water quality is within the optimal range for consumption and daily use. No contaminants detected."
+                            : "Your water quality is outside the safe range. Avoid consuming this water without treatment.",
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                "pH",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text("$ph"),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                "TDS",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text("$tds ppm"),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                "Turbidity",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text("$turbidity NTU"),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
           ),
           SizedBox(height: 20),
 
