@@ -5,18 +5,23 @@ class PastAlertContainer extends StatelessWidget {
   final String cardStatus;
   final IconData iconName;
   final String time;
+  final Color iconColor;
+  final Color iconBgColor;
+
   const PastAlertContainer({
     super.key,
     required this.cardStatus,
     required this.iconName,
     required this.time,
+    this.iconColor = Colors.green,
+    this.iconBgColor = const Color(0x1A4CAF50),
   });
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: EdgeInsetsGeometry.symmetric(vertical: 18, horizontal: 15),
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -33,9 +38,9 @@ class PastAlertContainer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
-            backgroundColor: Colors.green.withOpacity(0.1),
+            backgroundColor: iconBgColor,
             radius: 25,
-            child: Icon(iconName, size: 24, color: Colors.green),
+            child: Icon(iconName, size: 24, color: iconColor),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -54,12 +59,15 @@ class PastAlertContainer extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  time,
-                  style: kCardHeadingTextStyle.copyWith(
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w100,
-                    letterSpacing: 0.5,
+                Flexible(
+                  child: Text(
+                    time,
+                    style: kCardHeadingTextStyle.copyWith(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w100,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.end,
                   ),
                 ),
               ],

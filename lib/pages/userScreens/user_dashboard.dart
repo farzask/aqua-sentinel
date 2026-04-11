@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:aqua_sentinel/constants/constants.dart';
 import 'package:aqua_sentinel/utils/circular_progress_bar.dart';
 import 'package:aqua_sentinel/utils/line_chart.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../apivariables.dart';
+import 'package:aqua_sentinel/sensor_data.dart';
 
 final String _geminiApiKey = YOUR_GEMINI_API_KEY;
 
@@ -17,65 +17,47 @@ class UserDashboard extends StatefulWidget {
 }
 
 class _UserDashboardState extends State<UserDashboard> {
-  String? status = 'Healthy';
-  double? ph = 7.2, tds = 115, turbidity = 0.4;
-
   String? generatedMessage;
   String? tip;
-  bool _isLoading = true;
-  bool _isLoadingQuality = true;
+  late bool _isLoading;
+  late bool _isLoadingQuality;
 
-  // Water usage data
-  final double currentMonthUsage = 1200;
   final double monthlyGoal = 1412;
-  final double usagePercent = 85;
-  final double pastMonthsTotal = 7500;
 
   @override
   void initState() {
     super.initState();
-    _initData();
+    // Restore cached state so we don't show loading again
+    _isLoadingQuality = !sensorData.hasData;
+    _isLoading = sensorData.geminiMessage == null;
+    generatedMessage = sensorData.geminiMessage;
+    tip = sensorData.geminiTip;
+
+    sensorData.notifier.addListener(_onSensorUpdate);
   }
 
-  Future<void> _initData() async {
-    await _fetchPotabilityData();
-    await _fetchGeminiInsight();
+  @override
+  void dispose() {
+    sensorData.notifier.removeListener(_onSensorUpdate);
+    super.dispose();
   }
 
-  Future<void> _fetchPotabilityData() async {
-    try {
-      final response = await http.get(Uri.parse(STREAMLIT_API_URL));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final probabilityPotable = (data['probability_potable'] as num)
-            .toDouble();
-        final probabilityUnsafe = (data['probability_unsafe'] as num)
-            .toDouble();
-        final input = data['input'] as Map<String, dynamic>;
-
-        setState(() {
-          status = probabilityPotable > probabilityUnsafe
-              ? 'Healthy'
-              : 'Unsafe';
-          ph = (input['ph'] as num).toDouble();
-          tds = (input['Solids'] as num).toDouble();
-          turbidity = (input['Turbidity'] as num).toDouble();
-          _isLoadingQuality = false;
-        });
-      } else {
-        throw Exception(
-          'Failed to fetch potability data: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      debugPrint('Error fetching potability data: $e');
-      setState(() {
-        _isLoadingQuality = false;
-      });
-    }
+  void _onSensorUpdate() {
+    setState(() {
+      _isLoadingQuality = false;
+    });
+    _fetchGeminiInsight();
   }
 
   Future<void> _fetchGeminiInsight() async {
+    final usagePercent = monthlyGoal > 0
+        ? (sensorData.currentMonthUsage / monthlyGoal * 100).clamp(0, 100)
+        : 0;
+    final totalHistory = sensorData.flowHistory.fold<double>(
+      0,
+      (a, b) => a + b,
+    );
+
     try {
       final model = GenerativeModel(
         model: 'gemini-2.5-flash',
@@ -86,12 +68,12 @@ class _UserDashboardState extends State<UserDashboard> {
           '''Analyze the following water usage data for a user and provide a personalized sustainability message and a water-saving pro tip.
 
 Water Usage Data:
-- Current Month Usage: ${currentMonthUsage}L ($usagePercent% of monthly goal of ${monthlyGoal}L)
-- Water Quality Status: $status
-- pH Level: $ph
-- TDS: $tds ppm
-- Turbidity: $turbidity NTU
-- Past 9 Months Total Usage: ${pastMonthsTotal}L
+- Current Month Usage: ${sensorData.currentMonthUsage.toStringAsFixed(1)}L (${usagePercent.toStringAsFixed(0)}% of monthly goal of ${monthlyGoal.toInt()}L)
+- Water Quality Status: ${sensorData.status}
+- pH Level: ${sensorData.ph.toStringAsFixed(2)}
+- TDS: ${sensorData.tds.toStringAsFixed(2)} ppm
+- Turbidity: ${sensorData.turbidity.toStringAsFixed(2)} NTU
+- Total Usage So Far: ${totalHistory.toStringAsFixed(1)}L
 
 Respond ONLY in valid JSON format with exactly two fields:
 {
@@ -111,6 +93,8 @@ Respond ONLY in valid JSON format with exactly two fields:
         setState(() {
           generatedMessage = parsed['message'] as String?;
           tip = parsed['tip'] as String?;
+          sensorData.geminiMessage = generatedMessage;
+          sensorData.geminiTip = tip;
           _isLoading = false;
         });
       } else {
@@ -130,11 +114,22 @@ Respond ONLY in valid JSON format with exactly two fields:
 
   @override
   Widget build(BuildContext context) {
-    var user = 'Nikhil';
-    final isHealthy = status == 'Healthy';
+    var user = 'Farza';
+    final isHealthy = sensorData.status == 'Healthy';
     final statusColor = isHealthy
         ? const Color.fromARGB(255, 43, 153, 47)
         : Colors.red;
+    final usagePercent = monthlyGoal > 0
+        ? (sensorData.currentMonthUsage / monthlyGoal * 100).clamp(0, 100)
+        : 0.0;
+    final usageFraction = (sensorData.currentMonthUsage / monthlyGoal).clamp(
+      0.0,
+      1.0,
+    );
+    final totalHistory = sensorData.flowHistory.fold<double>(
+      0,
+      (a, b) => a + b,
+    );
 
     return Expanded(
       child: ListView(
@@ -169,7 +164,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Status: $status",
+                                "Status: ${sensorData.status}",
                                 style: TextStyle(
                                   color: statusColor,
                                   fontWeight: FontWeight.bold,
@@ -202,7 +197,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                                 "pH",
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              Text("$ph"),
+                              Text(sensorData.ph.toStringAsFixed(2)),
                             ],
                           ),
                           Column(
@@ -211,7 +206,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                                 "TDS",
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              Text("$tds ppm"),
+                              Text("${sensorData.tds.toStringAsFixed(2)} ppm"),
                             ],
                           ),
                           Column(
@@ -220,7 +215,9 @@ Respond ONLY in valid JSON format with exactly two fields:
                                 "Turbidity",
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              Text("$turbidity NTU"),
+                              Text(
+                                "${sensorData.turbidity.toStringAsFixed(2)} NTU",
+                              ),
                             ],
                           ),
                         ],
@@ -328,14 +325,19 @@ Respond ONLY in valid JSON format with exactly two fields:
                     ),
                   ],
                 ),
+                SizedBox(height: 5),
+                Text("Maximum Monthly Goal: ${monthlyGoal.toInt()}L"),
                 SizedBox(height: 20),
-                CircularProgressDisplay(value: 0.50, label: '1200L'),
+                CircularProgressDisplay(
+                  value: usageFraction.toDouble(),
+                  label: '${sensorData.currentMonthUsage.toStringAsFixed(0)}L',
+                ),
                 SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'You\'ve used 85% of your monthly goal.',
+                      'You\'ve used ${usagePercent.toStringAsFixed(0)}% of your monthly goal.',
                       style: kCardHeadingTextStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -396,7 +398,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                           ),
                         ),
                         Text(
-                          'Last 9 Months',
+                          'Recent Readings',
                           style: kCardHeadingTextStyle.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -407,12 +409,12 @@ Respond ONLY in valid JSON format with exactly two fields:
                     Row(
                       children: [
                         Text(
-                          '7500 L',
+                          '${totalHistory.toStringAsFixed(1)} L',
                           style: kWaterFlowTextStyle.copyWith(fontSize: 21),
                         ),
                       ],
                     ),
-                    WaterUsageChart(),
+                    WaterUsageChart(data: sensorData.flowHistory),
                   ],
                 ),
               ),

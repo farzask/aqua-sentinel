@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/pages/homepage.dart';
+import 'package:aqua_sentinel/sensor_data.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
-  runApp(MyApp());
-
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  sensorData.startListening();
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
