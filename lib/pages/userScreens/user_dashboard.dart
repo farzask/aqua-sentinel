@@ -114,7 +114,7 @@ Respond ONLY in valid JSON format with exactly two fields:
 
   @override
   Widget build(BuildContext context) {
-    var user = 'Farza';
+    // var user = sensorData.userName;
     final isHealthy = sensorData.status == 'Healthy';
     final statusColor = isHealthy
         ? const Color.fromARGB(255, 43, 153, 47)
@@ -259,7 +259,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Great job, $user!',
+                            'Great job, ${sensorData.userName}',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,

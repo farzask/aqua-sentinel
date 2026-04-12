@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/constants/constants.dart';
 import 'package:aqua_sentinel/widgets/profile_details_container_widget.dart';
+import 'package:aqua_sentinel/sensor_data.dart';
 
 class UserProfile extends StatelessWidget {
   const UserProfile({super.key});
@@ -28,7 +29,7 @@ class UserProfile extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Nikhil Ashok',
+                    sensorData.userName,
                     style: kWaterFlowTextStyle.copyWith(
                       color: Colors.white,
                       fontSize: 20,
@@ -61,25 +62,25 @@ class UserProfile extends StatelessWidget {
                   ProfileDetailsContainer(
                     icon: Icons.person_outlined,
                     fieldtag: 'Name',
-                    fieldValue: 'Nikhil Ashok',
+                    fieldValue: sensorData.userName,
                   ),
                   Divider(color: Colors.grey.shade300, thickness: 1),
                   ProfileDetailsContainer(
                     icon: Icons.location_on_outlined,
                     fieldtag: 'Address',
-                    fieldValue: '123 Main Street, Peshawar',
+                    fieldValue: sensorData.address,
                   ),
                   Divider(color: Colors.grey.shade300, thickness: 1),
                   ProfileDetailsContainer(
                     icon: Icons.call_outlined,
                     fieldtag: 'Contact Number',
-                    fieldValue: '+92 345 6783098',
+                    fieldValue: sensorData.phoneNumber,
                   ),
                   Divider(color: Colors.grey.shade300, thickness: 1),
                   ProfileDetailsContainer(
                     icon: Icons.mail_outline,
                     fieldtag: 'Email',
-                    fieldValue: 'nikhil.ashok@email.com',
+                    fieldValue: sensorData.email,
                   ),
                 ],
               ),
