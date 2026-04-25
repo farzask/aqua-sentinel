@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await sensorData.loadFromStorage();
   runApp(MyApp());
   await notificationService.init();
   sensorData.startListening();

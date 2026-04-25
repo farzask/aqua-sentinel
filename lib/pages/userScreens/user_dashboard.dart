@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/constants/constants.dart';
@@ -24,6 +25,16 @@ class _UserDashboardState extends State<UserDashboard> {
 
   final double monthlyGoal = 1412;
 
+  // Debounce: wait 15 s of no new updates before calling Gemini
+  static const Duration _debounceDuration = Duration(seconds: 15);
+  // Only call if totalVolume changed by at least this many litres since last call
+  static const double _significantChangeLiters = 5.0;
+
+  Timer? _debounceTimer;
+  // totalVolume at the time of the last successful Gemini call.
+  // -1 means Gemini has never been called this session.
+  double _lastGeminiVolume = -1;
+
   @override
   void initState() {
     super.initState();
@@ -33,11 +44,18 @@ class _UserDashboardState extends State<UserDashboard> {
     generatedMessage = sensorData.geminiMessage;
     tip = sensorData.geminiTip;
 
+    // If we already have a cached insight, mark volume as "seen" so we
+    // don't re-call just because the app restarted.
+    if (sensorData.geminiMessage != null) {
+      _lastGeminiVolume = sensorData.totalVolume;
+    }
+
     sensorData.notifier.addListener(_onSensorUpdate);
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     sensorData.notifier.removeListener(_onSensorUpdate);
     super.dispose();
   }
@@ -46,17 +64,34 @@ class _UserDashboardState extends State<UserDashboard> {
     setState(() {
       _isLoadingQuality = false;
     });
-    _fetchGeminiInsight();
+    _scheduleGeminiIfNeeded();
   }
 
+  /// Resets the debounce window on every sensor update.
+  /// After 15 s of silence, fires Gemini only if there was a significant
+  /// change in totalVolume since the last call.
+  void _scheduleGeminiIfNeeded() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      final vol = sensorData.totalVolume;
+      final change = (vol - _lastGeminiVolume).abs();
+      final neverCalled = _lastGeminiVolume < 0;
+      if (neverCalled || change >= _significantChangeLiters) {
+        _fetchGeminiInsight();
+      }
+    });
+  }
+
+  /// Calls the Gemini API immediately. Cancels any pending debounce timer so
+  /// a manual refresh doesn't race with a scheduled call.
   Future<void> _fetchGeminiInsight() async {
+    _debounceTimer?.cancel();
+    // Snapshot the volume we're generating an insight for.
+    final volumeAtCall = sensorData.totalVolume;
+
     final usagePercent = monthlyGoal > 0
-        ? (sensorData.currentMonthUsage / monthlyGoal * 100).clamp(0, 100)
+        ? (volumeAtCall / monthlyGoal * 100).clamp(0, 100)
         : 0;
-    final totalHistory = sensorData.flowHistory.fold<double>(
-      0,
-      (a, b) => a + b,
-    );
 
     try {
       final model = GenerativeModel(
@@ -68,12 +103,12 @@ class _UserDashboardState extends State<UserDashboard> {
           '''Analyze the following water usage data for a user and provide a personalized sustainability message and a water-saving pro tip.
 
 Water Usage Data:
-- Current Month Usage: ${sensorData.currentMonthUsage.toStringAsFixed(1)}L (${usagePercent.toStringAsFixed(0)}% of monthly goal of ${monthlyGoal.toInt()}L)
+- Current Month Usage: ${volumeAtCall.toStringAsFixed(1)}L (${usagePercent.toStringAsFixed(0)}% of monthly goal of ${monthlyGoal.toInt()}L)
 - Water Quality Status: ${sensorData.status}
 - pH Level: ${sensorData.ph.toStringAsFixed(2)}
 - TDS: ${sensorData.tds.toStringAsFixed(2)} ppm
 - Turbidity: ${sensorData.turbidity.toStringAsFixed(2)} NTU
-- Total Usage So Far: ${totalHistory.toStringAsFixed(1)}L
+- Total Volume Recorded: ${volumeAtCall.toStringAsFixed(1)}L
 
 Respond ONLY in valid JSON format with exactly two fields:
 {
@@ -95,6 +130,7 @@ Respond ONLY in valid JSON format with exactly two fields:
           tip = parsed['tip'] as String?;
           sensorData.geminiMessage = generatedMessage;
           sensorData.geminiTip = tip;
+          _lastGeminiVolume = volumeAtCall;
           _isLoading = false;
         });
       } else {
@@ -107,6 +143,8 @@ Respond ONLY in valid JSON format with exactly two fields:
             'Unable to load personalized insights right now. Keep tracking your usage to stay on top of your sustainability goals!';
         tip =
             'Turn off the tap while brushing your teeth to save up to 8 gallons of water per day.';
+        // Record volume so a transient error doesn't cause immediate retries
+        _lastGeminiVolume = volumeAtCall;
         _isLoading = false;
       });
     }
@@ -120,15 +158,11 @@ Respond ONLY in valid JSON format with exactly two fields:
         ? const Color.fromARGB(255, 43, 153, 47)
         : Colors.red;
     final usagePercent = monthlyGoal > 0
-        ? (sensorData.currentMonthUsage / monthlyGoal * 100).clamp(0, 100)
+        ? (sensorData.totalVolume / monthlyGoal * 100).clamp(0, 100)
         : 0.0;
-    final usageFraction = (sensorData.currentMonthUsage / monthlyGoal).clamp(
+    final usageFraction = (sensorData.totalVolume / monthlyGoal).clamp(
       0.0,
       1.0,
-    );
-    final totalHistory = sensorData.flowHistory.fold<double>(
-      0,
-      (a, b) => a + b,
     );
 
     return Expanded(
@@ -334,7 +368,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                 SizedBox(height: 20),
                 CircularProgressDisplay(
                   value: usageFraction.toDouble(),
-                  label: '${sensorData.currentMonthUsage.toStringAsFixed(0)}L',
+                  label: '${sensorData.totalVolume.toStringAsFixed(0)}L',
                 ),
                 SizedBox(height: 12),
                 Row(
@@ -413,7 +447,7 @@ Respond ONLY in valid JSON format with exactly two fields:
                     Row(
                       children: [
                         Text(
-                          '${totalHistory.toStringAsFixed(1)} L',
+                          '${sensorData.totalVolume.toStringAsFixed(1)} L',
                           style: kWaterFlowTextStyle.copyWith(fontSize: 21),
                         ),
                       ],

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aqua_sentinel/notification_service.dart';
 
 class LeakRecord {
@@ -13,6 +15,18 @@ class LeakRecord {
     required this.timestamp,
     required this.date,
   });
+
+  Map<String, dynamic> toJson() => {
+    'wasLeaking': wasLeaking,
+    'timestamp': timestamp,
+    'date': date.toIso8601String(),
+  };
+
+  factory LeakRecord.fromJson(Map<String, dynamic> json) => LeakRecord(
+    wasLeaking: json['wasLeaking'] as bool,
+    timestamp: json['timestamp'] as String? ?? '',
+    date: DateTime.parse(json['date'] as String),
+  );
 }
 
 class SensorDataNotifier extends ChangeNotifier {
@@ -46,10 +60,7 @@ class SensorData {
   int potability = 0;
   String status = 'Healthy';
 
-  // Accumulated usage from flowSensor2
-  double currentMonthUsage = 0;
-
-  // History of flowSensor2 values for the chart
+  // Flow history for the chart (persisted locally)
   final List<double> flowHistory = [];
 
   // Whether we have received at least one update from Firebase
@@ -62,13 +73,71 @@ class SensorData {
   // Incremented on each Firebase update, used to detect new data
   int updateCount = 0;
 
-  // Leak history for past alerts
+  // Leak history for past alerts (persisted locally)
   final List<LeakRecord> leakHistory = [];
 
   StreamSubscription<DatabaseEvent>? _subscription;
 
   // Notifier so widgets can listen for updates
   final SensorDataNotifier notifier = SensorDataNotifier();
+
+  // ── Local persistence ────────────────────────────────────────────────────
+
+  Future<void> loadFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Restore leak history
+      final leakJson = prefs.getString('leak_history');
+      if (leakJson != null) {
+        final list = jsonDecode(leakJson) as List<dynamic>;
+        leakHistory.addAll(
+          list.map((e) => LeakRecord.fromJson(e as Map<String, dynamic>)),
+        );
+      }
+
+      // Restore flow history (chart data)
+      final flowJson = prefs.getString('flow_history');
+      if (flowJson != null) {
+        final list = jsonDecode(flowJson) as List<dynamic>;
+        flowHistory.addAll(list.map((e) => (e as num).toDouble()));
+      }
+
+      debugPrint(
+        'SensorData: Loaded ${leakHistory.length} leak records and '
+        '${flowHistory.length} flow readings from storage',
+      );
+    } catch (e) {
+      debugPrint('SensorData: Failed to load from storage: $e');
+    }
+  }
+
+  Future<void> _saveLeakHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'leak_history',
+        jsonEncode(leakHistory.map((r) => r.toJson()).toList()),
+      );
+    } catch (e) {
+      debugPrint('SensorData: Failed to save leak history: $e');
+    }
+  }
+
+  Future<void> _saveFlowHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Keep at most 200 readings to avoid unbounded growth
+      final toSave = flowHistory.length > 200
+          ? flowHistory.sublist(flowHistory.length - 200)
+          : flowHistory;
+      await prefs.setString('flow_history', jsonEncode(toSave));
+    } catch (e) {
+      debugPrint('SensorData: Failed to save flow history: $e');
+    }
+  }
+
+  // ── Firebase listener ────────────────────────────────────────────────────
 
   void startListening() {
     if (_subscription != null) return;
@@ -94,7 +163,7 @@ class SensorData {
         final newLeakStatus = data['leak_status'] as bool? ?? false;
         leakTimestamp = data['leak_timestamp']?.toString() ?? '';
 
-        // Record leak change in history and notify
+        // Record leak state change and persist
         if (newLeakStatus != leakStatus || !hasData) {
           leakHistory.insert(
             0,
@@ -104,6 +173,7 @@ class SensorData {
               date: DateTime.now(),
             ),
           );
+          _saveLeakHistory();
 
           // Show push notification when leak is detected
           if (newLeakStatus && hasData) {
@@ -117,16 +187,15 @@ class SensorData {
         potability = (data['potability'] as num?)?.toInt() ?? 0;
         status = potability == 1 ? 'Healthy' : 'Unsafe';
 
-        // Accumulate flow sensor 2 readings
-        currentMonthUsage += flowSensor2;
-
-        // Store for chart history
+        // Append flow reading for chart history and persist
         flowHistory.add(flowSensor2);
+        _saveFlowHistory();
 
         hasData = true;
         updateCount++;
         debugPrint(
-          'SensorData: ph=$ph, tds=$tds, turbidity=$turbidity, status=$status',
+          'SensorData: ph=$ph, tds=$tds, turbidity=$turbidity, '
+          'totalVolume=$totalVolume, status=$status',
         );
         notifier.notify();
       },
