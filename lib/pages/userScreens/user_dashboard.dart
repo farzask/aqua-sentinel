@@ -132,8 +132,12 @@ Respond ONLY in valid JSON format with exactly two fields:
     );
 
     return Expanded(
-      child: ListView(
-        padding: EdgeInsetsGeometry.symmetric(horizontal: 22, vertical: 20),
+      child: RefreshIndicator(
+        onRefresh: _fetchGeminiInsight,
+        color: Colors.blue,
+        child: ListView(
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsetsGeometry.symmetric(horizontal: 22, vertical: 20),
         children: [
           Container(
             padding: EdgeInsetsGeometry.symmetric(vertical: 20, horizontal: 18),
@@ -420,7 +424,8 @@ Respond ONLY in valid JSON format with exactly two fields:
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

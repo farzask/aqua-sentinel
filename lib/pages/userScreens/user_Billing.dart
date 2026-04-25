@@ -1,16 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/constants/constants.dart';
-import 'package:aqua_sentinel/widgets/billing_history_item_widget.dart';
+import 'package:aqua_sentinel/sensor_data.dart';
 
-class UserBilling extends StatelessWidget {
+class UserBilling extends StatefulWidget {
   const UserBilling({super.key});
 
   @override
+  State<UserBilling> createState() => _UserBillingState();
+}
+
+class _UserBillingState extends State<UserBilling> {
+  @override
+  void initState() {
+    super.initState();
+    sensorData.notifier.addListener(_onUpdate);
+  }
+
+  @override
+  void dispose() {
+    sensorData.notifier.removeListener(_onUpdate);
+    super.dispose();
+  }
+
+  void _onUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _onRefresh() async {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final double usage = sensorData.flowSensor2;
+    final double bill = usage * 20;
+
     return Expanded(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-        child: Column(
+      child: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: Colors.blue,
+        child: ListView(
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
           children: [
             Container(
               width: double.infinity,
@@ -33,12 +64,12 @@ class UserBilling extends StatelessWidget {
                   ),
                   SizedBox(height: 5),
                   Text(
-                    "\$ 125.50",
+                    'PKR ${bill.toStringAsFixed(2)}',
                     style: kWaterFlowTextStyle.copyWith(color: Colors.white),
                   ),
                   SizedBox(height: 14),
                   Text(
-                    'Prediction for Next Month \$ 130.00',
+                    'Usage: ${usage.toStringAsFixed(2)} L × Rs 20/L',
                     style: kCardHeadingTextStyle.copyWith(
                       color: Colors.white70,
                       fontWeight: FontWeight.w300,
@@ -48,81 +79,48 @@ class UserBilling extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade300,
-                    spreadRadius: 1,
-                    blurRadius: 8,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Meter Status',
-                    style: kCardHeadingTextStyle.copyWith(
-                      color: Colors.black87,
-                      fontSize: 15,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      CircleAvatar(radius: 5, backgroundColor: Colors.green),
-                      SizedBox(width: 5),
-                      Text(
-                        'Active',
-                        style: kCardHeadingTextStyle.copyWith(
-                          color: Colors.green,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            SizedBox(height: 30),
+            Text(
+              'Billing History',
+              style: kCardHeadingTextStyle.copyWith(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(height: 30),
-            Expanded(
+            SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Icon(
+                    Icons.receipt_long_outlined,
+                    size: 48,
+                    color: Colors.grey.shade400,
+                  ),
+                  SizedBox(height: 12),
                   Text(
-                    'Billing History',
+                    'No Billing History',
                     style: kCardHeadingTextStyle.copyWith(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      color: Colors.grey.shade500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: 10),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsetsGeometry.all(5),
-                      children: [
-                        BillingHistoryItem(
-                          bill: '110.00',
-                          date: 'January 2024',
-                        ),
-                        SizedBox(height: 8),
-                        BillingHistoryItem(
-                          bill: '105.00',
-                          date: 'December 2023',
-                        ),
-                        SizedBox(height: 8),
-                        BillingHistoryItem(
-                          bill: '95.00',
-                          date: 'November 2023',
-                        ),
-                      ],
+                  SizedBox(height: 6),
+                  Text(
+                    'Your past bills will appear here.',
+                    style: kCardHeadingTextStyle.copyWith(
+                      color: Colors.grey.shade400,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w300,
                     ),
                   ),
                 ],
