@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'sensor_data.dart';
+import 'package:intl/intl.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -53,7 +55,7 @@ class NotificationService {
     await _plugin.show(
       0,
       'Leakage Detected!',
-      'A water leak has been detected in the main water line. Immediate attention required.',
+      'A water leak of ${sensorData.totalLeaked.toStringAsFixed(1)}L has been detected at ${DateFormat('MMM d, yyyy').format(DateTime.now())}, ${DateFormat('h:mm a').format(DateTime.now())} in the main water line. Immediate attention required.',
       details,
     );
   }
