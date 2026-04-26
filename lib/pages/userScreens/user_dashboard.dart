@@ -25,14 +25,9 @@ class _UserDashboardState extends State<UserDashboard> {
 
   final double monthlyGoal = 1412;
 
-  // Debounce: wait 15 s of no new updates before calling Gemini
-  static const Duration _debounceDuration = Duration(seconds: 15);
-  // Only call if totalVolume changed by at least this many litres since last call
-  static const double _significantChangeLiters = 5.0;
+  static const Duration _debounceDuration = Duration(seconds: 10);
 
   Timer? _debounceTimer;
-  // totalVolume at the time of the last successful Gemini call.
-  // -1 means Gemini has never been called this session.
   double _lastGeminiVolume = -1;
 
   @override
@@ -64,22 +59,11 @@ class _UserDashboardState extends State<UserDashboard> {
     setState(() {
       _isLoadingQuality = false;
     });
-    _scheduleGeminiIfNeeded();
-  }
-
-  /// Resets the debounce window on every sensor update.
-  /// After 15 s of silence, fires Gemini only if there was a significant
-  /// change in totalVolume since the last call.
-  void _scheduleGeminiIfNeeded() {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(_debounceDuration, () {
-      final vol = sensorData.totalVolume;
-      final change = (vol - _lastGeminiVolume).abs();
-      final neverCalled = _lastGeminiVolume < 0;
-      if (neverCalled || change >= _significantChangeLiters) {
-        _fetchGeminiInsight();
-      }
-    });
+    // Only schedule a Gemini call if totalVolume actually changed
+    if (sensorData.totalVolume != _lastGeminiVolume) {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(_debounceDuration, _fetchGeminiInsight);
+    }
   }
 
   /// Calls the Gemini API immediately. Cancels any pending debounce timer so
@@ -103,12 +87,9 @@ class _UserDashboardState extends State<UserDashboard> {
           '''Analyze the following water usage data for a user and provide a personalized sustainability message and a water-saving pro tip.
 
 Water Usage Data:
-- Current Month Usage: ${volumeAtCall.toStringAsFixed(1)}L (${usagePercent.toStringAsFixed(0)}% of monthly goal of ${monthlyGoal.toInt()}L)
-- Water Quality Status: ${sensorData.status}
-- pH Level: ${sensorData.ph.toStringAsFixed(2)}
-- TDS: ${sensorData.tds.toStringAsFixed(2)} ppm
-- Turbidity: ${sensorData.turbidity.toStringAsFixed(2)} NTU
-- Total Volume Recorded: ${volumeAtCall.toStringAsFixed(1)}L
+- Current Usage: ${volumeAtCall.toStringAsFixed(1)}L
+- Monthly Goal: ${monthlyGoal.toInt()}L
+- Usage Percentage: ${usagePercent.toStringAsFixed(0)}%
 
 Respond ONLY in valid JSON format with exactly two fields:
 {
