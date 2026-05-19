@@ -1,6 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
-import 'sensor_data.dart';
 import 'package:intl/intl.dart';
 
 class NotificationService {
@@ -24,11 +23,23 @@ class NotificationService {
       _initialized = result ?? false;
 
       if (_initialized) {
-        // Request notification permission on Android 13+
         final androidPlugin = _plugin
             .resolvePlatformSpecificImplementation<
                 AndroidFlutterLocalNotificationsPlugin>();
+
+        // Request notification permission on Android 13+
         await androidPlugin?.requestNotificationsPermission();
+
+        // Create the notification channel explicitly so the background service
+        // can use it immediately.
+        await androidPlugin?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'leak_alerts',
+            'Leak Alerts',
+            description: 'Notifications for water leak detection',
+            importance: Importance.max,
+          ),
+        );
       }
 
       debugPrint('NotificationService: initialized=$_initialized');
@@ -52,10 +63,15 @@ class NotificationService {
 
     const details = NotificationDetails(android: androidDetails);
 
+    final body = 'A water leak detected at '
+        '${DateFormat('MMM d, yyyy').format(DateTime.now())}, '
+        '${DateFormat('h:mm a').format(DateTime.now())}. '
+        'Immediate attention required.';
+
     await _plugin.show(
       0,
       'Leakage Detected!',
-      'A water leak of ${sensorData.totalLeaked.toStringAsFixed(1)}L has been detected at ${DateFormat('MMM d, yyyy').format(DateTime.now())}, ${DateFormat('h:mm a').format(DateTime.now())} in the main water line. Immediate attention required.',
+      body,
       details,
     );
   }

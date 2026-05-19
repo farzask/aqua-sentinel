@@ -1,4 +1,3 @@
-// ignore: file_names
 import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/constants/constants.dart';
 import 'package:aqua_sentinel/widgets/past_alert_card_widget.dart';

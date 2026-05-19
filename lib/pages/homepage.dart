@@ -2,9 +2,9 @@ import 'package:aqua_sentinel/utils/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:aqua_sentinel/pages/admin_dashboard.dart';
 import 'package:aqua_sentinel/pages/userScreens/user_dashboard.dart';
-import 'package:aqua_sentinel/pages/userScreens/user_Billing.dart';
-import 'package:aqua_sentinel/pages/userScreens/user_Alerts.dart';
-import 'package:aqua_sentinel/pages/userScreens/user_Profile.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_billing.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_alerts.dart';
+import 'package:aqua_sentinel/pages/userScreens/user_profile.dart';
 
 bool isAdmin = false;
 
