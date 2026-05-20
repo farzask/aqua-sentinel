@@ -184,6 +184,7 @@ class SensorData {
         pump = data['pump'] as bool? ?? false;
         totalLeaked = (data['total_leaked'] as num?)?.toDouble() ?? 0;
         totalVolume = (data['total_volume'] as num?)?.toDouble() ?? 0;
+        totalVolume = totalVolume/1000;
         potability = (data['potability'] as num?)?.toInt() ?? 0;
         status = potability == 1 ? 'Healthy' : 'Unsafe';
 

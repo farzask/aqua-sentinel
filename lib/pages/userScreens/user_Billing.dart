@@ -33,7 +33,7 @@ class _UserBillingState extends State<UserBilling> {
   @override
   Widget build(BuildContext context) {
     final double usage = sensorData.totalVolume; 
-    final double bill = usage * 20;
+    final double bill = usage * 2;
 
     return Expanded(
       child: RefreshIndicator(
