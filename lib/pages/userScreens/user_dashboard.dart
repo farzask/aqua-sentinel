@@ -59,18 +59,14 @@ class _UserDashboardState extends State<UserDashboard> {
     setState(() {
       _isLoadingQuality = false;
     });
-    // Only schedule a Gemini call if totalVolume actually changed
     if (sensorData.totalVolume != _lastGeminiVolume) {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(_debounceDuration, _fetchGeminiInsight);
     }
   }
 
-  /// Calls the Gemini API immediately. Cancels any pending debounce timer so
-  /// a manual refresh doesn't race with a scheduled call.
   Future<void> _fetchGeminiInsight() async {
     _debounceTimer?.cancel();
-    // Snapshot the volume we're generating an insight for.
     final volumeAtCall = sensorData.totalVolume;
 
     final usagePercent = monthlyGoal > 0

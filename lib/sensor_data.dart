@@ -41,7 +41,7 @@ class SensorData {
   factory SensorData() => _instance;
   SensorData._internal();
 
-  String userName = 'Farza Shahzad';
+  String userName = 'Test User';
   String address = '123 Main Street, Peshawar';
   String phoneNumber = '+92 300 1234567';
   String email = 'abc.123@gmail.com';
